@@ -1,0 +1,5 @@
+RF2: Detección de Vehículos en Movimiento
+• Identificar vehículos dentro del flujo de vídeo, incluso en movimiento.
+
+• Usar modelos de detección de objetos (YOLO, SSD, Faster R-CNN) para
+localizar automóviles, motos, etc
