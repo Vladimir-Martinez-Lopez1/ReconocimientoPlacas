@@ -32,7 +32,7 @@ while True:
     ret, frame = video.read()
     
     # Mostrar el cuadro en una ventana
-    cv2.imshow("Video", frame)
+    cv2.imshow("", frame)
     
     # Salir del bucle si se presiona la tecla 'q'
     if cv2.waitKey(1) & 0xFF == ord('q'):
