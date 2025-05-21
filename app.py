@@ -64,7 +64,7 @@ def crearobjeto():
     except Exception as e:
         messagebox.showerror("Error", f"No se pudo iniciar el procesamiento:\n{str(e)}")
 def abrir_csv():
-    ruta_csv = r"C:\Users\Edgar\Downloads\ss\detection_tracking_log.csv"
+    ruta_csv = r"C:\Users\Vladimir\Documents\concurso\concurso\ReconocimientoPlacas\detection_tracking_log.csv"
     if os.path.exists(ruta_csv):
         try:
             subprocess.Popen(['notepad', ruta_csv])

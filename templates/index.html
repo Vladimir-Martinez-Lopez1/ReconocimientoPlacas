@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="es">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Análisis de Placas Vehiculares</title>
+    <style>
+      body {
+        font-family: Arial, sans-serif;
+        max-width: 800px;
+        margin: 0 auto;
+        padding: 20px;
+        background-color: #f5f5f5;
+      }
+      .container {
+        display: flex;
+        flex-direction: column;
+        gap: 20px;
+        background-color: white;
+        padding: 20px;
+        border-radius: 8px;
+        box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      }
+      h1 {
+        color: #2c3e50;
+        text-align: center;
+        margin-bottom: 10px;
+      }
+      .video-container {
+        position: relative;
+        width: 100%;
+        background-color: #000;
+        border-radius: 4px;
+        overflow: hidden;
+      }
+      #video {
+        width: 100%;
+        display: block;
+      }
+      #canvas {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        pointer-events: none;
+      }
+      .controls {
+        display: flex;
+        gap: 10px;
+        margin-bottom: 10px;
+        justify-content: center;
+      }
+      button {
+        padding: 12px 20px;
+        background-color: #3498db;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+        font-size: 16px;
+        font-weight: bold;
+        transition: background-color 0.3s;
+        min-width: 180px;
+      }
+      button:hover {
+        background-color: #2980b9;
+      }
+      button:disabled {
+        background-color: #95a5a6;
+        cursor: not-allowed;
+      }
+      #startBtn {
+        background-color: #2ecc71;
+      }
+      #startBtn:hover {
+        background-color: #27ae60;
+      }
+      #stopBtn {
+        background-color: #e74c3c;
+      }
+      #stopBtn:hover {
+        background-color: #c0392b;
+      }
+      .results {
+        border: 1px solid #ddd;
+        padding: 15px;
+        border-radius: 4px;
+        background-color: #f9f9f9;
+      }
+      .status {
+        text-align: center;
+        margin: 10px 0;
+        font-weight: bold;
+        color: #7f8c8d;
+      }
+      #resultsContainer {
+        min-height: 100px;
+      }
+      .frame-info {
+        font-size: 14px;
+        color: #7f8c8d;
+        text-align: right;
+        margin-top: 5px;
+      }
+    </style>
+  </head>
+  <body>
+    <div class="container">
+      <h1>Análisis de Placas Vehiculares</h1>
+      <p class="status" id="statusText">
+        Presione "Iniciar Análisis" para comenzar
+      </p>
+
+      <div class="controls">
+        <button id="startBtn">Iniciar Análisis</button>
+        <button id="stopBtn" disabled>Detener Análisis</button>
+      </div>
+
+      <div class="video-container">
+        <video id="video" autoplay playsinline muted></video>
+        <canvas id="canvas"></canvas>
+      </div>
+      <p class="frame-info">
+        Frames procesados: <span id="frameCounter">0</span>
+      </p>
+
+      <div class="results">
+        <h3>Resultados:</h3>
+        <div id="resultsContainer">
+          <p>Esperando para procesar...</p>
+        </div>
+      </div>
+    </div>
+
+    <script>
+      // Elementos del DOM
+      const video = document.getElementById("video");
+      const canvas = document.getElementById("canvas");
+      const ctx = canvas.getContext("2d");
+      const startBtn = document.getElementById("startBtn");
+      const stopBtn = document.getElementById("stopBtn");
+      const resultsContainer = document.getElementById("resultsContainer");
+      const statusText = document.getElementById("statusText");
+      const frameCounter = document.getElementById("frameCounter");
+
+      // Variables de estado
+      let stream = null;
+      let processingInterval = null;
+      let frameCount = 0;
+      let processedFrames = 0;
+      let isProcessing = false;
+      const frameSkip = 3; // Procesar 1 de cada X frames
+
+      // Inicializar la cámara
+      async function initCamera() {
+        document
+          .getElementById("startBtn")
+          .addEventListener("click", async () => {
+            try {
+              // Verifica si el navegador soporta la API de medios
+              if (
+                !navigator.mediaDevices ||
+                !navigator.mediaDevices.getUserMedia
+              ) {
+                throw new Error(
+                  "Tu navegador no soporta acceso a la cámara o la página no está en HTTPS"
+                );
+              }
+
+              // Solicita permisos de cámara
+              const stream = await navigator.mediaDevices.getUserMedia({
+                video: {
+                  facingMode: "environment",
+                  width: { ideal: 1280 },
+                  height: { ideal: 720 },
+                },
+                audio: false,
+              });
+
+              // Asigna el stream al elemento video
+              const video = document.getElementById("video");
+              video.srcObject = stream;
+              video.play();
+
+              // Resto de tu lógica de inicio...
+            } catch (error) {
+              console.error("Error al acceder a la cámara:", error);
+              alert(
+                `Error: ${error.message}\n\nAsegúrate de que:\n1. Estás usando HTTPS\n2. Has dado permisos de cámara\n3. La URL es correcta`
+              );
+            }
+          });
+        statusText.textContent = "Inicializando cámara...";
+
+        try {
+          stream = await navigator.mediaDevices.getUserMedia({
+            video: {
+              width: { ideal: 1280 },
+              height: { ideal: 720 },
+              facingMode: "environment",
+            },
+            audio: false,
+          });
+
+          video.srcObject = stream;
+
+          // Ajustar canvas al tamaño del video
+          video.onloadedmetadata = () => {
+            canvas.width = video.videoWidth;
+            canvas.height = video.videoHeight;
+            statusText.textContent = "Cámara lista. Procesando...";
+          };
+
+          return true;
+        } catch (err) {
+          console.error("Error al acceder a la cámara:", err);
+          statusText.textContent = "Error al acceder a la cámara";
+          resultsContainer.innerHTML = `
+                    <p style="color: #e74c3c;">Error: ${err.message}</p>
+                    <p>Asegúrese de otorgar los permisos necesarios.</p>
+                `;
+          return false;
+        }
+      }
+
+      // Capturar y enviar frame al servidor
+      async function captureAndSendFrame() {
+        if (!isProcessing) return;
+
+        frameCount++;
+
+        // Saltar frames para mejorar rendimiento
+        if (frameCount % frameSkip !== 0) return;
+
+        try {
+          // Dibujar el frame actual en el canvas
+          ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+          // Convertir a formato JPEG
+          const blob = await new Promise((resolve) => {
+            canvas.toBlob(resolve, "image/jpeg", 0.8);
+          });
+
+          const formData = new FormData();
+          formData.append("frame", blob, "frame.jpg");
+
+          // Enviar frame al servidor
+          const uploadResponse = await fetch("/upload_frame", {
+            method: "POST",
+            body: formData,
+          });
+
+          if (!uploadResponse.ok) {
+            throw new Error("Error al enviar frame al servidor");
+          }
+
+          // Obtener frame procesado
+          fetch("/get_processed_frame")
+            .then((response) => {
+              if (response.ok) return response.blob();
+              throw new Error("No plate detected");
+            })
+            .then((blob) => {
+              const url = URL.createObjectURL(blob);
+              resultsContainer.innerHTML = `
+                <div class="plate-result">
+                    <h4>Placa detectada:</h4>
+                    <img src="${url}" style="max-width: 200px;"/>
+                    <p>Confianza: ${lastConfidence}%</p>
+                </div>
+            `;
+            });
+        } catch (err) {
+          console.error("Error en el procesamiento:", err);
+          resultsContainer.innerHTML += `
+                    <p style="color: #e74c3c;">Error en frame ${processedFrames}: ${err.message}</p>
+                `;
+        }
+      }
+
+      // Limpiar todos los recursos
+      async function cleanupResources() {
+        isProcessing = false;
+        statusText.textContent = "Deteniendo...";
+
+        // 1. Detener el intervalo de captura
+        if (processingInterval) {
+          clearInterval(processingInterval);
+          processingInterval = null;
+        }
+
+        // 2. Detener el stream de la cámara
+        if (stream) {
+          stream.getTracks().forEach((track) => track.stop());
+          stream = null;
+          video.srcObject = null;
+        }
+
+        // 3. Detener el procesamiento en el backend
+        try {
+          const response = await fetch("/stop_processing", {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+          });
+
+          if (!response.ok) {
+            throw new Error("Error al detener el backend");
+          }
+        } catch (err) {
+          console.error("Error al detener el backend:", err);
+          resultsContainer.innerHTML += `
+                    <p style="color: #e74c3c;">Error al detener el backend: ${err.message}</p>
+                `;
+        }
+
+        // 4. Resetear el estado
+        frameCount = 0;
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+
+        statusText.textContent = "Análisis detenido";
+      }
+
+      // Evento para iniciar el procesamiento
+      startBtn.addEventListener("click", async () => {
+        if (isProcessing) return;
+
+        startBtn.disabled = true;
+        resultsContainer.innerHTML = "<p>Iniciando análisis...</p>";
+
+        const cameraReady = await initCamera();
+        if (!cameraReady) {
+          startBtn.disabled = false;
+          return;
+        }
+
+        try {
+          const response = await fetch("/start_processing", {
+            method: "POST",
+          });
+
+          if (response.ok) {
+            isProcessing = true;
+            stopBtn.disabled = false;
+
+            // Iniciar captura de frames
+            processingInterval = setInterval(() => {
+              if (isProcessing) {
+                captureAndSendFrame();
+              }
+            }, 100); // Ajustar este valor para controlar la frecuencia
+          } else {
+            throw new Error("Error al iniciar el procesamiento en el backend");
+          }
+        } catch (err) {
+          console.error("Error al iniciar procesamiento:", err);
+          resultsContainer.innerHTML = `
+                    <p style="color: #e74c3c;">Error: ${err.message}</p>
+                `;
+          await cleanupResources();
+          startBtn.disabled = false;
+        }
+      });
+
+      // Evento para detener el procesamiento
+      stopBtn.addEventListener("click", async () => {
+        if (!isProcessing) return;
+
+        stopBtn.disabled = true;
+        resultsContainer.innerHTML += "<p>Deteniendo el análisis...</p>";
+
+        await cleanupResources();
+
+        startBtn.disabled = false;
+        resultsContainer.innerHTML +=
+          '<p style="color: #27ae60;">Análisis detenido correctamente</p>';
+      });
+
+      // Limpiar al cerrar la página
+      window.addEventListener("beforeunload", async (e) => {
+        if (isProcessing) {
+          e.preventDefault();
+          e.returnValue =
+            "El análisis está en progreso. ¿Seguro que quieres salir?";
+
+          await cleanupResources();
+        }
+      });
+    </script>
+  </body>
+</html>
