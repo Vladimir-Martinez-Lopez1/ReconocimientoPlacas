@@ -18,7 +18,7 @@ UPLOAD_FOLDER = 'temp_frames'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
 # Configura Ngrok (agregar tu token de autenticación)
-NGROK_AUTH_TOKEN = ""  # Reemplaza con tu token
+NGROK_AUTH_TOKEN = "2xQ9MIV9WaQZKscLpVHycvYZlsn_3jBMJFBV2zeZoc4gTt7Ps"  # Reemplaza con tu token
 ngrok.set_auth_token(NGROK_AUTH_TOKEN)
 
 # Variables de control
@@ -114,7 +114,7 @@ def process_frames():
                 try:
                     frame = cv2.imread(frame_path)
                     if frame is not None and video_processor is not None:
-                        processed_frame = video_processor.process_frame(frame)
+                        processed_frame = video_processor.process_frame(frame)#aqui se llama a la funcion process_frame
                         
                         # Solo guardar frame procesado si contiene detecciones
                         if video_processor.object_info:
