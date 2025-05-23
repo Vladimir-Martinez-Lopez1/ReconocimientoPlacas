@@ -10,7 +10,6 @@ import easyocr
 import numpy as np
 from dotenv import load_dotenv
 from bd import create_database, insert_data, get_data
-conn = create_database()
 
 load_dotenv()
 
@@ -225,9 +224,8 @@ class VideoProcessor:
             cv2.imwrite('temp_frames/last_plate.jpg', license_plate_roi)
             if license_plate_text:
                 insert_data(
-                    conn=conn,
                     placas=license_plate_text,
-                    tipo_placa=current_info['class_name'],
+                    tipo_placa=current_info['plate_confidence'],
                     frame=str(self.frame_number)
                 )
             # Guardar en CSV inmediatamente

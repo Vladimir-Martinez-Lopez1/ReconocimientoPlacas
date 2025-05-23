@@ -7,7 +7,6 @@ import easyocr
 import numpy as np
 import sqlite3
 from bd import create_database, insert_data, get_data
-conn = create_database()
 class VideoProcessor:
     def frame_generator(self):
         while self.cap.isOpened():
@@ -25,8 +24,8 @@ class VideoProcessor:
                 b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
     def __init__(self, video_path):
         self.video_path = video_path 
-        self.model_path = '/home/hugocd/Documentos/programacion/ReconocimientoPlacas/yolo11n.pt'
-        self.license_plate_model_path = '/home/hugocd/Documentos/programacion/ReconocimientoPlacas/runs/detect/license_plate_detector/weights/best.pt'
+        self.model_path = '/home/hugocd/Documentos/Programacion/ReconocimientoPlacas/yolo11n.pt'
+        self.license_plate_model_path = '/home/hugocd/Documentos/Programacion/ReconocimientoPlacas/runs/detect/license_plate_detector/weights/best.pt'
         self.output_video_path = 'output_video.mp4'
         self.csv_file_path = 'detection_tracking_log.csv'
         self.show_video = True
@@ -163,6 +162,12 @@ class VideoProcessor:
                         'plate_confidence': plate_confidence,
                         'plate_bounding_box': (px1, py1, px2, py2)
                     })
+                    if license_plate_text:
+                        insert_data(
+                            placas=license_plate_text,
+                            tipo_placa=current_info['plate_confidence'],
+                            frame=str(self.frame_number)
+                        )
                 
                 # Dibujar resultados
                 cv2.rectangle(frame, (px1, py1), (px2, py2), (255, 255, 255), 2)
@@ -251,8 +256,6 @@ class VideoProcessor:
                     *info['plate_bounding_box'],
                     info['license_plate_text'] if info['license_plate_text'] else ''
                 ])
-                if info['license_plate_text']:
-                    insert_data(conn, info['license_plate_text'], info['class_name'], str(info['first_frame']))
 
 
 

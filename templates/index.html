@@ -103,8 +103,8 @@
     </div>
     
     <script>
-        let ipA="http://192.168.1.68:8080/"
-        let path2="/home/hugocd/Documentos/programacion/ReconocimientoPlacas/uploaded_videos/"
+        let ipA="http://192.168.1.77:8080/"
+        let path2="/home/hugocd/Documentos/Programacion/ReconocimientoPlacas/uploaded_videos/"
         function mostrarVideo() {
             const url = document.getElementById('ipInput').value.trim();
             fetch(ipA+"set_video", {
@@ -244,6 +244,7 @@
       // Función para procesar video completo
     function procesarvideo() {
         let path3=path2+nombreVideo
+        console.log(path3)
         fetch(ipA+"set_video", {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },

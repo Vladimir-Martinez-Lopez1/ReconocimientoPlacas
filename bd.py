@@ -17,9 +17,10 @@ def create_database(db_name='baseDatos.db'):
     ''')
 
     conn.commit()  
-    return conn
+    conn.close()
 
-def insert_data(conn, placas, tipo_placa, frame):
+def insert_data(placas, tipo_placa, frame):
+    conn = sqlite3.connect('baseDatos.db')
     cursor = conn.cursor()
 
     # Insertar los datos en la tabla
@@ -29,12 +30,14 @@ def insert_data(conn, placas, tipo_placa, frame):
     ''', (placas, tipo_placa, frame))
 
     conn.commit()
+    conn.close()
 
-def get_data(conn):
+def get_data():
+    conn = sqlite3.connect('baseDatos.db')
     cursor = conn.cursor()
 
     # Obtener todos los registros de la tabla
     cursor.execute('SELECT * FROM placas')
     rows = cursor.fetchall()
-
+    conn.close()
     return rows

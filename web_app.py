@@ -2,12 +2,11 @@ from flask import Flask, render_template, request, jsonify, Response
 import cv2
 import numpy as np
 import threading
-from nuevo import VideoProcessor
 import time
 import os
 import gc
 from dotenv import load_dotenv
-from coni import VideoProcessor 
+from nuevo import VideoProcessor 
 from bd import create_database, get_data
 
 load_dotenv()
@@ -147,9 +146,7 @@ def process_frames():
 
 @app.route('/get_placas', methods=['GET'])
 def get_placas():
-    conn = create_database()  # Conecta o crea la BD
-    datos = get_data(conn)    # Obtiene los datos de la tabla
-    conn.close()
+    datos = get_data()    # Obtiene los datos de la tabla
     
     # Formatea los datos para enviarlos como JSON
     resultados = []

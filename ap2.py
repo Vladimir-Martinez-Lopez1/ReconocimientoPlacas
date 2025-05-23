@@ -1,6 +1,5 @@
 from flask import Flask, Response, request, jsonify
 from nuevo import VideoProcessor
-from pyngrok import ngrok  # Importación nueva
 from dotenv import load_dotenv
 from flask_cors import CORS
 import os
