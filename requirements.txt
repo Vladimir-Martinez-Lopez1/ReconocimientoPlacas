@@ -14,3 +14,4 @@ torchvision
 tqdm
 yapf
 python-dotenv
+flask-cors

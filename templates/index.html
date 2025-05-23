@@ -96,13 +96,46 @@
         </div>
       </div>
     </div>
-
     <!-- Aquí cambia el contenido -->
     <div id="contenido" class="mt-4 w-full p-4 flex flex-col items-center justify-center">
       <!-- Contenido dinámico aparecerá aquí -->
     </div>
+    
+    <script>
+        let ipA="http://192.168.1.68:8080/"
+        let path2="/home/hugocd/Documentos/programacion/ReconocimientoPlacas/uploaded_videos/"
+        function mostrarVideo() {
+            const url = document.getElementById('ipInput').value.trim();
+            fetch(ipA+"set_video", {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ path: url })
+            });
+            reset();
+            mostrarVideo2()
+            mostrarVideo2()
+        }
+        function mostrarVideo2() {
+            const url = ipA+"video_feed";
+            console.log(url)
+            if (!url) {
+                alert('Por favor, escribe la URL del video');
+                return;
+            }
+            const img = document.getElementById('videoStream');
+            img.src = url + '?t=' + Date.now(); // Evitar caché
+            img.style.display = 'block';
+        }
 
-    <div class="video-container max-w-4xl mx-auto mb-4">
+        function reset() {
+            const img = document.getElementById('videoStream');
+            img.style.display = 'none';
+            img.src = '';
+        }
+    </script>
+
+    <div id="videoContainer" class="video-container max-w-4xl mx-auto mb-4 flex flex-col justify-center">
+        <img id="videoStream" class="" >
       <video id="video" autoplay playsinline muted></video>
       <canvas id="canvas"></canvas>
     </div>
@@ -149,9 +182,18 @@
       const resultsContainer = document.getElementById("resultsContainer");
       const frameCounter = document.getElementById("frameCounter");
 
-      function procesarvideo(){
-        console.log(nombreVideo);
+      // Función para procesar video completo
+    function procesarvideo() {
+        let path3=path2+nombreVideo
+        fetch(ipA+"set_video", {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ path: path3 })
+        });
+        reset();
+        mostrarVideo2()
       }
+
       // Función para manejar la subida de videos
       function handleVideoUpload() {
         const input = document.querySelector('input[name="videoUP"]');
@@ -398,9 +440,10 @@
             <span class="block text-sm sm:text-lg md:text-xl lg:text-2xl xl:text-3xl font-extrabold text-[#023047] leading-tight w-full border-b mb-2 p-1 border-[#023047]">
               Ingresa la URL:
             </span>
-            <input class="text-sm sm:text-base w-full rounded p-2 mb-2" type="text" id="camaraIp" placeholder="ejemplo: https://192.168.0.2">
+            <input class="text-sm sm:text-base w-full rounded p-2 mb-2" type="text" id="ipInput" placeholder="ejemplo: https://192.168.0.2">
             <div class="w-full flex justify-end p-2">
-              <button class="bg-[#023047] p-2 rounded-lg text-white text-xs sm:text-base hover:bg-[#034C6B] transition"> Enviar </button>
+              <button class="bg-[#023047] p-2 rounded-lg text-white text-xs sm:text-base hover:bg-[#034C6B] transition" onclick="mostrarVideo()"> Enviar </button>
+              <button class="bg-[#023047] p-2 rounded-lg text-white text-xs sm:text-base hover:bg-[#034C6B] transition m--2" onclick="reset()"> Reiniciar </button>
             </div>
           </div>
           `;

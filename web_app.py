@@ -1,4 +1,4 @@
-from flask import Flask, render_template, request, jsonify, Response, redirect
+from flask import Flask, render_template, request, jsonify, Response
 import cv2
 import numpy as np
 import threading
@@ -6,34 +6,25 @@ from nuevo import VideoProcessor
 import time
 import os
 import gc
-from pyngrok import ngrok  # Importación nueva
 from dotenv import load_dotenv
+from coni import VideoProcessor 
 
 load_dotenv()
-# Configuración del garbage collector
 gc.enable()
 
 app = Flask(__name__)
 
-# Configuración global
 UPLOAD_FOLDER = 'temp_frames'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
-
-ngrok.set_auth_token(os.getenv("NEGROK_KEY"))
 
 # Variables de control
 video_processor = None
 processing_active = False
 stop_event = threading.Event()
 processing_lock = threading.Lock()
-frame_count = 0  # Contador global de frames
+frame_count = 0
 
-@app.before_request
-def before_request():
-    """Redirige HTTP a HTTPS para compatibilidad con cámara móvil"""
-    if not request.is_secure and not request.headers.get('X-Forwarded-Proto', 'http') == 'https':
-        url = request.url.replace('http://', 'https://', 1)
-        return redirect(url, code=301)
+# --- ELIMINAMOS EL before_request PARA REDIRECCION HTTPS ---
 
 @app.route('/')
 def index():
@@ -46,7 +37,7 @@ def start_processing():
     with processing_lock:
         if video_processor is None:
             try:
-                video_processor = VideoProcessor(0)  # Usar cámara 0 por defecto
+                video_processor = VideoProcessor(0)
                 threading.Thread(target=process_frames, daemon=True).start()
                 return jsonify({'status': 'processing_started'})
             except Exception as e:
@@ -68,13 +59,10 @@ def upload_frame():
 
 @app.route('/get_processed_frame', methods=['GET'])
 def get_processed_frame():
-    """Devuelve solo placas detectadas, no frames completos"""
     plate_path = os.path.join(UPLOAD_FOLDER, 'last_plate.jpg')
-    
     if os.path.exists(plate_path):
         with open(plate_path, 'rb') as f:
             return Response(f.read(), mimetype='image/jpeg')
-    
     return Response(status=204)
 
 VIDEO_FOLDER = 'uploaded_videos'
@@ -107,7 +95,6 @@ def stop_processing():
                 video_processor.cap.release()
                 if video_processor.out is not None:
                     video_processor.out.release()
-                # Guardar datos finales en CSV
                 video_processor.save_to_csv()
             except Exception as e:
                 print(f"Error al liberar recursos: {e}")
@@ -136,14 +123,12 @@ def process_frames():
                     if frame is not None and video_processor is not None:
                         processed_frame = video_processor.process_frame(frame)
                         
-                        # Solo guardar frame procesado si contiene detecciones
                         if video_processor.object_info:
                             cv2.imwrite(
                                 os.path.join(UPLOAD_FOLDER, 'processed_frame.jpg'), 
                                 processed_frame
                             )
                         
-                        # Limpieza periódica de memoria
                         frame_count += 1
                         if frame_count % 10 == 0:
                             gc.collect()
@@ -154,20 +139,12 @@ def process_frames():
             time.sleep(0.1)
     finally:
         processing_active = False
-        # Limpieza final
         if os.path.exists(os.path.join(UPLOAD_FOLDER, 'last_frame.jpg')):
             os.remove(os.path.join(UPLOAD_FOLDER, 'last_frame.jpg'))
         if os.path.exists(os.path.join(UPLOAD_FOLDER, 'processed_frame.jpg')):
             os.remove(os.path.join(UPLOAD_FOLDER, 'processed_frame.jpg'))
 
-def start_ngrok():
-    """Inicia un túnel ngrok para HTTPS"""
-    public_url = ngrok.connect(5000, bind_tls=True)
-    print(f" * Ngrok tunnel running at: {public_url}")
 
 if __name__ == '__main__':
-    # Inicia ngrok cuando se ejecute la aplicación
-    start_ngrok()
-    
-    # Ejecuta la aplicación Flask
-    app.run(host='0.0.0.0', port=5000, debug=False, threaded=True)
+    # Ejecuta solo en localhost sin ngrok
+    app.run(host='0.0.0.0', port=5500, debug=True)

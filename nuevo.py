@@ -13,6 +13,20 @@ from dotenv import load_dotenv
 load_dotenv()
 
 class VideoProcessor:
+    def frame_generator(self):
+        while self.cap.isOpened():
+            ret, frame = self.cap.read()
+            if not ret:
+                break
+            frame = self.process_frame(frame)
+
+            # Codificar a JPEG para enviar como stream
+            ret, jpeg = cv2.imencode('.jpg', frame)
+            if not ret:
+                continue
+
+            yield (b'--frame\r\n'
+                b'Content-Type: image/jpeg\r\n\r\n' + jpeg.tobytes() + b'\r\n')
     def __init__(self, video_source=None):
         # Configuración de rutas y parámetros
         self.model_path = os.getenv('MODEL_PATH')
