@@ -8,6 +8,7 @@ import os
 import gc
 from dotenv import load_dotenv
 from coni import VideoProcessor 
+from bd import create_database, get_data
 
 load_dotenv()
 gc.enable()
@@ -144,6 +145,24 @@ def process_frames():
         if os.path.exists(os.path.join(UPLOAD_FOLDER, 'processed_frame.jpg')):
             os.remove(os.path.join(UPLOAD_FOLDER, 'processed_frame.jpg'))
 
+@app.route('/get_placas', methods=['GET'])
+def get_placas():
+    conn = create_database()  # Conecta o crea la BD
+    datos = get_data(conn)    # Obtiene los datos de la tabla
+    conn.close()
+    
+    # Formatea los datos para enviarlos como JSON
+    resultados = []
+    for row in datos:
+        resultados.append({
+            'id': row[0],
+            'placas': row[1],
+            'tipo_placa': row[2],
+            'frame': row[3],
+            'fecha': row[4]
+        })
+
+    return jsonify(resultados)
 
 if __name__ == '__main__':
     # Ejecuta solo en localhost sin ngrok
