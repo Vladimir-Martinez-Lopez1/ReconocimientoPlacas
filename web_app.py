@@ -7,7 +7,9 @@ import time
 import os
 import gc
 from pyngrok import ngrok  # Importación nueva
+from dotenv import load_dotenv
 
+load_dotenv()
 # Configuración del garbage collector
 gc.enable()
 
@@ -17,9 +19,7 @@ app = Flask(__name__)
 UPLOAD_FOLDER = 'temp_frames'
 os.makedirs(UPLOAD_FOLDER, exist_ok=True)
 
-# Configura Ngrok (agregar tu token de autenticación)
-NGROK_AUTH_TOKEN = ""  # Reemplaza con tu token
-ngrok.set_auth_token(NGROK_AUTH_TOKEN)
+ngrok.set_auth_token(os.getenv("NEGROK_KEY"))
 
 # Variables de control
 video_processor = None
@@ -76,6 +76,26 @@ def get_processed_frame():
             return Response(f.read(), mimetype='image/jpeg')
     
     return Response(status=204)
+
+VIDEO_FOLDER = 'uploaded_videos'
+os.makedirs(VIDEO_FOLDER, exist_ok=True)
+
+@app.route('/upload_video', methods=['POST'])
+def upload_video():
+    if 'video' not in request.files:
+        return jsonify({'error': 'No se envió ningún archivo de video'}), 400
+    
+    video_file = request.files['video']
+    if video_file.filename == '':
+        return jsonify({'error': 'Nombre de archivo vacío'}), 400
+
+    try:
+        video_path = os.path.join(VIDEO_FOLDER, video_file.filename)
+        video_file.save(video_path)
+        return jsonify({'status': 'video_subido', 'filename': video_file.filename})
+    except Exception as e:
+        return jsonify({'error': str(e)}), 500
+
 
 @app.route('/stop_processing', methods=['POST'])
 def stop_processing():

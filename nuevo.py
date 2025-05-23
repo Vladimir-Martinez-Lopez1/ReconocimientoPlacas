@@ -8,12 +8,15 @@ from collections import defaultdict, Counter
 from ultralytics import YOLO
 import easyocr
 import numpy as np
+from dotenv import load_dotenv
+
+load_dotenv()
 
 class VideoProcessor:
     def __init__(self, video_source=None):
         # Configuración de rutas y parámetros
-        self.model_path = 'C:/Users/Vladimir/Documents/concurso/concurso/ReconocimientoPlacas/yolo11n.pt'
-        self.license_plate_model_path = 'C:/Users/Vladimir/Documents/concurso/concurso/ReconocimientoPlacas/runs/detect/license_plate_detector/weights/best.pt'
+        self.model_path = os.getenv('MODEL_PATH')
+        self.license_plate_model_path = os.getenv('LICENCE_PLATE_MODEL_PATH')
         self.output_video_path = 'output_video.mp4'
         self.csv_file_path = 'detection_tracking_log.csv'
         self.show_video = True

@@ -129,9 +129,6 @@
         <button class="p-2 text-white text-xl hover:bg-[#219EBC] hover:text-[#023047] rounded-lg hover:translate-y-1 hover:shadow-lg transition" onclick="menu('ip')">
           <i class="fi fi-ss-camera-cctv"></i>
         </button>
-        <button class="p-2 text-white text-xl hover:bg-[#219EBC] hover:text-[#023047] rounded-lg hover:translate-y-1 hover:shadow-lg transition" onclick="menu('texto')">
-          <i class="fi fi-tr-camera-viewfinder"></i>
-        </button>
       </div>
     </footer>
 
@@ -143,6 +140,7 @@
       let processedFrames = 0;
       let isProcessing = false;
       const frameSkip = 3;
+      let nombreVideo=null;
 
       // Referencias a elementos del DOM que siempre existen
       const video = document.getElementById("video");
@@ -151,12 +149,59 @@
       const resultsContainer = document.getElementById("resultsContainer");
       const frameCounter = document.getElementById("frameCounter");
 
+      function procesarvideo(){
+        console.log(nombreVideo);
+      }
+      // Función para manejar la subida de videos
+      function handleVideoUpload() {
+        const input = document.querySelector('input[name="videoUP"]');
+        const file = input.files[0];
+        if (!file) {
+          alert("Por favor selecciona un archivo de video.");
+          return;
+        }
+
+        // Mostrar feedback visual
+        const uploadBtn = document.getElementById('subirVideoBtn');
+        const originalText = uploadBtn.innerHTML;
+        uploadBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i><span class="hidden sm:inline">Subiendo...</span>';
+        uploadBtn.disabled = true;
+
+        const formData = new FormData();
+        formData.append('video', file);
+
+        fetch('/upload_video', {
+          method: 'POST',
+          body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.status === 'video_subido') {
+            alert("¡Video subido con éxito: " + data.filename + "!");
+            nombreVideo=data.filename;
+            // Opcional: cambiar a otra vista o mostrar información del video
+          } else {
+            alert("Error: " + JSON.stringify(data));
+          }
+        })
+        .catch(error => {
+          console.error('Error al subir el video:', error);
+          alert("Error al subir el video: " + error.message);
+        })
+        .finally(() => {
+          // Restaurar el botón
+          uploadBtn.innerHTML = originalText;
+          uploadBtn.disabled = false;
+        });
+      }
+
       // Función para obtener referencias a botones dinámicos
       function getButtonReferences() {
         return {
           startBtn: document.getElementById("startBtn"),
           stopBtn: document.getElementById("stopBtn"),
-          statusText: document.getElementById("statusText")
+          statusText: document.getElementById("statusText"),
+          subirVideoBtn: document.getElementById("subirVideoBtn")
         };
       }
 
@@ -181,7 +226,7 @@
 
       // Función para asignar event listeners a los botones
       function assignEventListeners() {
-        const { startBtn, stopBtn } = getButtonReferences();
+        const { startBtn, stopBtn, subirVideoBtn } = getButtonReferences();
 
         if (startBtn) {
           startBtn.addEventListener("click", handleStartClick);
@@ -191,8 +236,15 @@
           stopBtn.addEventListener("click", handleStopClick);
         }
 
+        // IMPORTANTE: Asignar el event listener al botón de subir video
+        if (subirVideoBtn) {
+          subirVideoBtn.addEventListener("click", handleVideoUpload);
+        }
+
         // Inicializar estado de botones
-        updateButtonStates(false);
+        if (startBtn && stopBtn) {
+          updateButtonStates(false);
+        }
       }
 
       // Manejador para el botón de iniciar
@@ -252,15 +304,94 @@
       function menu(opcion="movil"){
         const contenedor = document.getElementById('contenido');
         contenedor.innerHTML = '';
-
         if (opcion === 'video') {
           contenedor.innerHTML = `
-            <h2 class="text-xl font-bold text-[#023047] mb-4">Contenido de Video</h2>
-            <video width="320" height="240" controls class="rounded-lg shadow-md">
-              <source src="video.mp4" type="video/mp4">
-              Tu navegador no soporta video.
-            </video>
+          <div class="grid grid-cols-1 md:grid-cols-2 gap-2">
+              <div class="w-[90%] max-w-md mx-auto flex flex-col justify-center items-center bg-[#8ECAE6] rounded-lg shadow-lg p-6 mb-6">
+                <span class="block text-sm text-center sm:text-lg md:text-xl lg:text-2xl font-extrabold border-dotted text-[#023047] leading-tight w-full border-b-2 mb-4 pb-2 border-[#023047]">
+                  Documento de video:
+                </span>
+                
+                <p class="text-center text-[#023047] text-sm sm:text-base md:text-lg mb-4">
+                  Selecciona un documento de video para comenzar
+                </p>
+
+                <div class="flex justify-center gap-4 mb-2 w-full">
+                  <!-- From Uiverse.io by ParasSalunke --> 
+                  <div class="max-w-md mx-auto rounded-lg overflow-hidden md:max-w-xl">
+                    <div class="md:flex">
+                      <div class="w-full p-3">
+                        <div class="relative h-48 rounded-lg border-2 border-blue-500 bg-gray-50 flex justify-center items-center shadow-lg hover:shadow-xl transition-shadow duration-300 ease-in-out">
+                          <div class="absolute flex flex-col items-center">
+                            <img
+                              alt="File Icon"
+                              class="mb-3"
+                              src="https://img.icons8.com/dusk/64/000000/file.png"
+                            />
+                            <span class="block text-gray-500 font-semibold"
+                              >Arrastra aqui!</span>
+                            <span class="block text-gray-400 font-normal mt-1"
+                              >o click para subir</span
+                            >
+                          </div>
+
+                          <input
+                            name="videoUP"
+                            class="h-full w-full opacity-0 cursor-pointer"
+                            type="file" accept="video/*"
+                          />
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                </div>
+                  <button id="subirVideoBtn" class="flex items-center justify-center text-white text-sm lg:text-base px-4 py-3 bg-[#023047] rounded-lg hover:scale-105 hover:bg-[#034C6B] transition-all duration-200 shadow-md">
+                    <i class="fas fa-upload mr-2"></i>
+                    <span class="hidden sm:inline">Subir</span>
+                  </button>
+              </div>
+              <div class="w-[90%]  max-w-md mx-auto flex flex-col justify-center items-center bg-[#8ECAE6] rounded-lg shadow-lg p-6 mb-6">
+                <span class="block text-sm text-center sm:text-lg md:text-xl lg:text-2xl font-extrabold border-dotted text-[#023047] leading-tight w-full border-b-2 mb-4 pb-2 border-[#023047]">
+                  Procesar video
+                </span>
+                
+                <p class="text-center text-[#023047] text-sm sm:text-base md:text-lg mb-4">
+                  Presiona continuar, para procesar el video
+                </p>
+
+                <div class="flex justify-center gap-4 mb-2 w-full p-5 mb-5 mt-5">
+                  <i class="fas fa-photo-video text-8xl"></i>
+
+                </div>
+                  <!-- From Uiverse.io by nathAd17 --> 
+                  <button
+                    type="submit"
+                    class="flex justify-center gap-2 items-center mx-auto shadow-xl text-xs sm:text-sm md:text-lg bg-gray-50 backdrop-blur-md lg:font-semibold isolation-auto border-gray-50 before:absolute before:w-full before:transition-all before:duration-700 before:hover:w-full before:-left-full before:hover:left-0 before:rounded-full before:bg-[#023047] hover:text-gray-50 before:-z-10 before:aspect-square before:hover:scale-150 before:hover:duration-700 relative z-10 px-4 py-2 overflow-hidden border-2 rounded-full group"
+                    onclick="procesarvideo()"
+                    >
+                    Continuar
+                    <svg
+                      class="w-8 h-8 justify-end group-hover:rotate-90 group-hover:bg-gray-50 text-gray-50 ease-linear duration-300 rounded-full border border-gray-700 group-hover:border-none p-2 rotate-45"
+                      viewBox="0 0 16 19"
+                      xmlns="http://www.w3.org/2000/svg"
+                    >
+                      <path
+                        d="M7 18C7 18.5523 7.44772 19 8 19C8.55228 19 9 18.5523 9 18H7ZM8.70711 0.292893C8.31658 -0.0976311 7.68342 -0.0976311 7.29289 0.292893L0.928932 6.65685C0.538408 7.04738 0.538408 7.68054 0.928932 8.07107C1.31946 8.46159 1.95262 8.46159 2.34315 8.07107L8 2.41421L13.6569 8.07107C14.0474 8.46159 14.6805 8.46159 15.0711 8.07107C15.4616 7.68054 15.4616 7.04738 15.0711 6.65685L8.70711 0.292893ZM9 18L9 1H7L7 18H9Z"
+                        class="fill-gray-800 group-hover:fill-gray-800"
+                      ></path>
+                    </svg>
+                  </button>
+
+              </div>
+            </div>
           `;
+          
+          // IMPORTANTE: Asignar event listeners después de crear el contenido de video
+          setTimeout(() => {
+            assignEventListeners();
+          }, 10);
+          
         } else if (opcion === 'ip') {
           contenedor.innerHTML = `
           <div class="w-[90%] sm:w-[60%] bg-[#8ECAE6] rounded drop-shadow-[1rem_1rem_0_#023047] p-4 mb-5">
@@ -302,7 +433,7 @@
             </div>
           `;
           
-          // ¡IMPORTANTE! Reasignar event listeners después de crear el contenido
+          // IMPORTANTE: Reasignar event listeners después de crear el contenido
           setTimeout(() => {
             assignEventListeners();
           }, 10); // Pequeño delay para asegurar que el DOM esté actualizado
